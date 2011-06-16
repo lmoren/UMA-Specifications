@@ -497,10 +497,28 @@ token=sbjsbhs(/SSJHBSUSSJHVhjsgvhsgvshgsv&ipaddr=192.168.1.1
           it returns an UMA error message (ISSUE#12: correct? HTTP success?) to
           indicate that the requester's token is invalid.</t>
 
+          <t>AM includes one of the following error codes with the error response:
+          (see <xref target="am-error-response"></xref>) and responds with HTTP
+          200 status code:
+
+            <list style="hanging">
+              <t hangText="invalid_requester_token">The requester's token presented
+              by the host to the AM was not valid</t>
+            </list></t>
+
           <figure>
             <preamble>For example:</preamble>
 
-            <artwork><![CDATA[TBS]]></artwork>
+            <artwork><![CDATA[
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+{
+   {
+      "error":"invalid_requester_token"
+   }
+}
+         ]]></artwork>
           </figure>
         </section>
 
@@ -610,6 +628,38 @@ Cache-Control: no-store
             <t>Error message indicating a malformed scope registration
             request.</t>
           </list></t>
+
+        <section title="AM returns an error response">
+          <t>AM includes one of the following error codes with the error response:
+          (see <xref target="am-error-response"></xref>) and responds with HTTP
+          400 (Bad Request) status code:
+
+            <list style="hanging">
+              <t hangText="invalid_requester_token">The requester's token presented
+              by the host to the AM was not valid</t>
+              <t hangText="invalid_resource_set_id">The resource set id provided in
+              the request was not previously registered at the AM or is invalid
+              because of different reason</t>
+              <t hangText="invalid_scopes">Scopes provided in the request were not
+              previously registered at the AM or are invalid because of different
+              reason</t>
+            </list></t>
+
+          <figure>
+            <preamble>For example:</preamble>
+
+            <artwork><![CDATA[
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+Cache-Control: no-store
+{
+   {
+      "error":"invalid_resource_set_id"
+   }
+}
+         ]]></artwork>
+          </figure>
+        </section>
       </section>
 
       <section anchor="r-am-authz-scope"
@@ -1449,6 +1499,45 @@ Content-Type: application/json
       <t>If the host's token validation request message itself was badly
       formed, the AM returns an "invalid_request" error to the host. [@@Need
       to say what happens to the requester after that?]</t>
+
+      <section anchor="am-error-response" title="AM endpoints error responses">
+        <t>If the client request to the Authorization Manager endpoint is invalid,
+        the Authorization Manager constructs the error response by adding the
+        following parameters to the entity body of the HTTP response using the
+        "application/json" media type:
+
+        <list style="hanging">
+            <t hangText="error">REQUIRED. A single error code. Value for this
+            parameter is defined in the specific AM endpoint description</t>
+            <t hangText="error_description">OPTIONAL. A human-readable text providing
+            additional information, used to assist in the understanding and resolution
+            of the error occurred.</t>
+            <t hangText="error_uri">OPTIONAL. A URI identifying a human-readable web
+            page with information about the error, used to provide the end-user with
+            additional information about the error.</t>
+        </list></t>
+
+        <t>Common error codes:</t>
+        <t hangText="invalid_request"> The request is missing a required parameter or
+        is otherwise malformed.  The AM MUST respond with the HTTP 400 (Bad Request)
+        status code.</t>
+
+        <t>For example:</t>
+        <figure>
+          <artwork><![CDATA[
+          HTTP/1.1 400 Bad Request
+          Content-Type: application/json
+          Cache-Control: no-store
+          {
+              {
+                  "error":"invalid_request",
+                  "error_description":"There is already a resource with this identifier.",
+                  "error_uri":"http://am.example.com/errors/resource_exists"
+              }
+          }]]></artwork>
+        </figure>
+      </section>
+
     </section>
 
     <!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -->
