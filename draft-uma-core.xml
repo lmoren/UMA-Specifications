@@ -877,18 +877,33 @@ Content-Type: application/json
               /host/{hostid}/resource_set/</t>
             </list></t>
 
-          <t>The AM MUST respond to host requests using unsupported HTTP
-          methods with an HTTP 403 Forbidden error and MUST fail to act on the
-          request.</t>
+
+          <t>If the request to the AM registration API is incorrect AM responds
+          with an error message (see <xref target="am-error-response"></xref>)
+          by including one of the following error codes with the response:
+
+            <list style="hanging">
+              <t hangText="unsupported_method_type">The AM responds to host
+              requests using unsupported HTTP methods with an HTTP 403 Forbidden
+              status code and MUST fail to act on the request.</t>
+              <t hangText="hostid_access_token_not_match">Host ID does not match
+              the presented host access token. The AM MUST respons with HTTP 400
+              Bad Request status code</t>
+            </list></t>
 
           <figure>
-            <preamble>HTTP response (unsupported method or host ID not
-            matching the presented host access token):</preamble>
+            <preamble>For example:</preamble>
 
-            <artwork><![CDATA[HTTP/1.1 403 Forbidden
-...
-
-(Body provides user-readable explanation of the error.)]]></artwork>
+            <artwork><![CDATA[
+HTTP/1.1 403 Forbidden
+Content-Type: application/json
+Cache-Control: no-store
+{
+   {
+      "error":"unsupported_method_type"
+   }
+}
+         ]]></artwork>
           </figure>
 
           <section anchor="create-resource-set"
@@ -1366,37 +1381,6 @@ token=sbjsbhs(/SSJHBSUSSJHVhjsgvhsgvshgsv&ipaddr=192.168.1.1
        ]]></artwork>
         </figure>
 
-        <section anchor="token-invalid"
-                 title="AM Returns a Token Invalid Response">
-          <t>If the the AM finds the requester's access token to be invalid,
-          it returns an UMA error message (ISSUE#12: correct? HTTP success?)
-          to indicate that the requester's token is invalid.</t>
-
-	      <t>AM includes one of the following error codes with the error response:
-          (see <xref target="am-error-response"></xref>) and responds with HTTP
-          200 status code:
-
-            <list style="hanging">
-              <t hangText="invalid_requester_token">The requester's token presented
-              by the host to the AM was not valid</t>
-            </list></t>
-
-          <figure>
-            <preamble>For example:</preamble>
-
-            <artwork><![CDATA[
-HTTP/1.1 200 OK
-Content-Type: application/json
-Cache-Control: no-store
-{
-   {
-      "error":"invalid_requester_token"
-   }
-}
-         ]]></artwork>
-          </figure>
-        </section>
-
         <section anchor="token-valid"
                  title="AM Returns a Token Valid Response">
           <t>If the the AM finds the requester's access token to be valid, it
@@ -1451,10 +1435,41 @@ Cache-Control: no-store
               }
            ]
 }    ]]></artwork>
-          </figure>
+         </figure>
 
           <t>(ISSUE #33: Syntactic sugar for "implicit resource sets" where
           there's a single API endpoint?)</t>
+        </section>
+
+        <section anchor="token-invalid"
+                 title="AM Returns a Token Invalid Response">
+          <t>If the the AM finds the requester's access token to be invalid,
+          it returns an UMA error message (ISSUE#12: correct? HTTP success?)
+          to indicate that the requester's token is invalid.</t>
+
+	      <t>AM includes one of the following error codes with the error response:
+          (see <xref target="am-error-response"></xref>) and responds with HTTP
+          400 status code:
+
+            <list style="hanging">
+              <t hangText="invalid_requester_token">The requester's token presented
+              by the host to the AM was not valid</t>
+            </list></t>
+
+          <figure>
+            <preamble>For example:</preamble>
+
+            <artwork><![CDATA[
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+{
+   {
+      "error":"invalid_requester_token"
+   }
+}
+         ]]></artwork>
+          </figure>
         </section>
       </section>
 
@@ -1504,6 +1519,37 @@ Cache-Control: no-store
             <t>Error message indicating a malformed scope registration
             request.</t>
           </list></t>
+
+        <section anchor="h-am-register-scope-invalid-response"
+                 title="Error Response">
+	      <t>The AM responds with an HTTP 400 (Bad Request) status code and
+          includes one of the following error codes with the error response
+          (see <xref target="am-error-response"></xref>):
+
+            <list style="hanging">
+              <t hangText="invalid_resource_id">Provided resource set identifier
+              was not found at the AM.</t>
+              <t hangText="invalid_scope">At least one of the scopes included in
+              the request was not registered previously by this host.</t>
+              <t hangText="invalid_requester_token">Requester token was not
+              recognized by the AM.</t>
+            </list></t>
+
+          <figure>
+            <preamble>For example:</preamble>
+
+            <artwork><![CDATA[
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+Cache-Control: no-store
+{
+   {
+      "error":"invalid_resource_id"
+   }
+}
+         ]]></artwork>
+          </figure>
+        </section>
       </section>
 
       <section anchor="r-am-authz-scope"
