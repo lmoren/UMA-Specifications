@@ -888,16 +888,20 @@ Content-Type: application/json
 
 
           <t>If the request to the AM registration API is incorrect then the AM responds
-          with an error message (see <xref target="am-error-response"></xref>)
+          with an error message (see <xref target="uma-error-response"></xref>)
           by including one of the following error codes with the response:
 
             <list style="hanging">
               <t hangText="unsupported_method_type">The AM responds to host
-              requests made using an unsupported HTTP method with HTTP 403 Forbidden
+              requests made using an unsupported HTTP method with HTTP 403 (Forbidden)
               status code and MUST fail to act on the request.</t>
-              <t hangText="hostid_access_token_not_match">Host ID does not match
-              the presented host access token. The AM MUST respons with HTTP 400
-              Bad Request status code</t>
+              <t hangText="hostid_access_token_mismatch">Host id does not match
+              the presented host access token. The AM MUST respond with HTTP 403
+              (Forbidden) status code</t>
+              <t hangText="ambiguous_resource_set_id">Resource set id provided in the
+              resource set description does not match the one provided in URI.The AM
+              MUST respond with HTTP 400 (Bad Request) status code and MUST fail to act
+              on the request.</t>
             </list></t>
 
           <figure>
@@ -908,9 +912,7 @@ HTTP/1.1 403 Forbidden
 Content-Type: application/json
 Cache-Control: no-store
 {
-   {
-      "error":"unsupported_method_type"
-   }
+   "error":"unsupported_method_type"
 }
          ]]></artwork>
           </figure>
@@ -1340,13 +1342,21 @@ Content-Type: application/json
           the correct host access token in protecting the resource.</t>
 
           <t>If the requester's request is ambiguous with respect to the
-          specific user at the host, the host rimmediately esponds with an
-          "ambiguous-user error" message.</t>
+          specific user at the host, the host immediately responds with an
+          "ambiguous-user" error message (see <xref target="uma-error-response"></xref>).
+          </t>
 
           <figure>
             <preamble>For example:</preamble>
 
-            <artwork><![CDATA[TBS]]></artwork>
+            <artwork><![CDATA[
+HTTP/1.1 403 Forbidden
+Content-Type: application/json
+Cache-Control: no-store
+{
+   "error":"ambiguous-user"
+}
+         ]]></artwork>
           </figure>
         </section>
 
@@ -1354,8 +1364,8 @@ Content-Type: application/json
           <t>If the host is able to detect uniquely which one of its users has
           the operative control over access to the resource (see <xref
           target="ambiguous-user"></xref>), but the requester does not present
-          any access token with the request, the host MUST return an HTTP 400
-          status code indicating it is an "invalid_request" [REF: Section
+          any access token with the request, the host MUST return an HTTP 400 (Bad
+          Request) status code indicating it is an "invalid_request" [REF: Section
           2.4.1 of OAuth Bearer Token draft]. This indicates to the requester
           one of the following: that the request is missing a required
           parameter, that it includes an unsupported parameter or parameter
@@ -1363,14 +1373,15 @@ Content-Type: application/json
           one method for including an access token, or that it is otherwise
           malformed.</t>
 
-          <t>(ISSUE #32: Need more detail here. It needs to convey the AM
-          hostmeta endpoint so that the requester can discover the right token
-          endpoint to use.)</t>
-
           <figure>
             <preamble>For example:</preamble>
 
-            <artwork><![CDATA[TBS]]></artwork>
+            <artwork>
+HTTP/1.1 400 Bad Request
+WWW-Authenticate: Bearer realm="example"
+                     host_id="1B2M2Y8AsgTpgAmY7PhCfg",
+                     am_uri="http://am.example.com"
+            </artwork>
           </figure>
         </section>
 
@@ -1379,19 +1390,20 @@ Content-Type: application/json
           host engages in a token validation interaction with the AM to test
           its validity (see <xref target="h-am-token-validation"></xref>). If
           the AM reports that the token is invalid, the Host SHOULD return an
-          HTTP 401 status code indicating it is an "invalid_token" [REF:
-          Section 2.4.1 of Oauth Bearer Token draft]. This indicates to the
+          HTTP 401 (Unauthorized) status code indicating it is an "invalid_token"
+          [REF: Section 2.4.1 of Oauth Bearer Token draft]. This indicates to the
           requester that the access token provided is expired, revoked,
           malformed, or invalid for other reasons.</t>
-
-          <t>(ISSUE #32: Need more detail here, as above. It needs to convey
-          the AM hostmeta endpoint so that the requester can discover the
-          right token endpoint to use.)</t>
 
           <figure>
             <preamble>For example:</preamble>
 
-            <artwork><![CDATA[TBS]]></artwork>
+            <artwork>
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer realm="example"
+                     host_id="1B2M2Y8AsgTpgAmY7PhCfg",
+                     am_uri="http://am.example.com"
+            </artwork>
           </figure>
         </section>
 
@@ -1414,7 +1426,13 @@ Content-Type: application/json
           <figure>
             <preamble>For example:</preamble>
 
-            <artwork><![CDATA[TBS]]></artwork>
+            <artwork>
+HTTP/1.1 403 Forbidden
+WWW-Authenticate: Bearer realm="example"
+                     host_id="1B2M2Y8AsgTpgAmY7PhCfg"
+                     am_uri="http://am.example.com",
+                     ticket="5454345rdsaa4543"
+            </artwork>
           </figure>
         </section>
 
@@ -1432,7 +1450,14 @@ Content-Type: application/json
           <figure>
             <preamble>For example:</preamble>
 
-            <artwork><![CDATA[TBS]]></artwork>
+            <artwork>
+HTTP/1.1 200 OK
+Content-Type: image/jpeg
+/9j/4AAQSkZJRgABAgAAZABkAAD/7AARRHVja
+3kAAQAEAAAAPAAA/+4ADkFkb2JlAGTAAAAAAf
+/bAIQABgQEBAUEBgUFBgkGBQYJCwgGBggLDAo
+KCwoKDBAMDAwMDAwQDA4PEA8ODBMTFBQTExwb
+            </artwork>
           </figure>
 
           <t>This response constitutes the conclusion of Phase 3 of UMA.</t>
@@ -1577,16 +1602,17 @@ Cache-Control: no-store
         <section anchor="token-invalid"
                  title="AM Returns a Token Invalid Response">
           <t>If the the AM finds the requester's access token to be invalid,
-          it returns an UMA error message (ISSUE#12: correct? HTTP success?)
-          to indicate that the requester's token is invalid.</t>
+          it returns an UMA error message.</t>
 
 	      <t>AM includes one of the following error codes in the error response:
-          (see <xref target="am-error-response"></xref>) and responds with the HTTP
+          (see <xref target="uma-error-response"></xref>) and responds with the HTTP
           400 status code:
 
             <list style="hanging">
-              <t hangText="invalid_requester_token">The requester's access token presented
-              by the host to the AM was not valid.</t>
+              <t hangText="invalid_requester_token">AM determined that the requester access
+              token was not valid.</t>
+              <t hangText="expired_requester_token">AM determined that the requester access
+              token has expired.</t>
             </list></t>
 
           <figure>
@@ -1597,9 +1623,7 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 Cache-Control: no-store
 {
-   {
-      "error":"invalid_requester_token"
-   }
+   "error":"invalid_requester_token"
 }
          ]]></artwork>
           </figure>
@@ -1689,10 +1713,10 @@ Location: https://am.example.com/host/scope_reg_uri/photoz.example.com/5454345rd
                  title="Error Response">
 	      <t>The AM responds with an HTTP 400 (Bad Request) status code and
           includes one of the following error codes with the error response
-          (see <xref target="am-error-response"></xref>):
+          (see <xref target="uma-error-response"></xref>):
 
             <list style="hanging">
-              <t hangText="invalid_resource_id">Provided resource set identifier
+              <t hangText="invalid_resource_set_id">Provided resource set identifier
               was not found at the AM.</t>
               <t hangText="invalid_scope">At least one of the scopes included in
               the request was not registered previously by this host.</t>
@@ -1708,9 +1732,7 @@ HTTP/1.1 400 Bad Request
 Content-Type: application/json
 Cache-Control: no-store
 {
-   {
-      "error":"invalid_resource_id"
-   }
+   "error":"invalid_resource_set_id"
 }
          ]]></artwork>
           </figure>
@@ -1822,77 +1844,63 @@ Cache-Control: no-store
     <!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -->
 
     <section title="Error Messages">
-      <t>[TBS: Lukasz to rewrite this section and put in appropriate "hooks"
-      everywhere a specific error message should be produced. Possibly
-      consider moving this section near the front of the document.]</t>
+      <t>Ultimately the host and the AM are responsible for either granting the access the
+      client attempted, or returning an error response with a reason for the failure.
+      <xref target="OAuth2"></xref> defines several error responses for a resource server to
+      return. UMA makes use of these error responses during the authentication to the
+      protected resources. Additionally UMA defines set of error responses for the purpose of
+      AM Endpoints <xref target="am-endpoints"></xref>.
+      </t>
 
-      <t>Ultimately the host is responsible for either granting the access the
-      requester attempted, or returning an error response to the requester
-      with a reason for the failure. <xref target="OAuth2"></xref> defines
-      several error responses for a resource server to return. UMA makes use
-      of these error responses, but requires the host to "outsource" the
-      determination of some error conditions to the AM.</t>
+      <section anchor="oauth-error-response" title="OAuth error response">
+        <t>While accessing one of the AM endpoints <xref target="am-endpoints"></xref>
+        or accessing protected resource at the host, client has to make an authenticated
+        request by including an OAuth access token in the HTTP request as described in
+        <xref target="OAuth2"></xref> Section 7.</t>
 
-      <t>The host is responsible for determining "insufficient_scope". If the
-      requester's attempted access does not match any of the scopes returned
-      by the AM in its valid-token response to the host, the host returns an
-      "insufficient_scope" error to the requester.</t>
+        <t>If the client authenticated request failed authentication,
+        the AM or the host SHOULD respond with an OAuth error message as described
+        in [Section 2.4.1 of the OAuth 2.0 Protocol: Bearer Tokens]
+        </t>
+      </section>
 
-      <t>The host is responsible for determining "invalid_request". If the
-      requester's request was badly formed, the host returns an
-      "invalid_request" error to the requester.</t>
-
-      <t>If the AM determined that the requester access token is invalid, it
-      returns an "invalid_requester_token" error response to the host. [@@TBS:
-      Need to flesh out more and provide an example.] The host then returns an
-      "invalid_token" response to the requester as described in section 5.2.1
-      of <xref target="OAuth2"></xref>.</t>
-
-      <t>If the AM determined that the requester access token has expired, it
-      returns an "expired_requester_token" error response to the host. [@@TBS:
-      Need to flesh out more and provide an example.] The host then returns an
-      "invalid_token" response to the requester as described in section 5.2.1
-      of <xref target="OAuth2"></xref>.</t>
-
-      <t>If the host's token validation request message itself was badly
-      formed, the AM returns an "invalid_request" error to the host. [@@Need
-      to say what happens to the requester after that?]</t>
-
-      <section anchor="am-error-response" title="AM endpoints error responses">
-        <t>If the client request to the Authorization Manager endpoint is invalid,
-        the Authorization Manager constructs the error response by adding the
-        following parameters to the entity body of the HTTP response using the
-        "application/json" media type:
+      <section anchor="uma-error-response" title="UMA error response">
+        <t>The client accessing the Authorization Manager endpoints or accessing protected
+        resource at the includes an OAuth token with the request in order to be authenticated.
+        If the client request is successfully authenticated, but is invalid from another reason
+        the Authorization Manager constructs the UMA error response by adding the following
+        parameters to the entity body of the HTTP response using the "application/json" media type:
 
         <list style="hanging">
-            <t hangText="error">REQUIRED. A single error code. Value for this
-            parameter is defined in the specific AM endpoint description</t>
-            <t hangText="error_description">OPTIONAL. A human-readable text providing
-            additional information, used to assist in the understanding and resolution
-            of the error occurred.</t>
-            <t hangText="error_uri">OPTIONAL. A URI identifying a human-readable web
-            page with information about the error, used to provide the end-user with
-            additional information about the error.</t>
+          <t hangText="error">REQUIRED. A single error code. Value for this
+          parameter is defined in the specific AM endpoint description.</t>
+          <t hangText="error_description">OPTIONAL. A human-readable text providing
+          additional information, used to assist in the understanding and resolution
+          of the error occurred.</t>
+          <t hangText="error_uri">OPTIONAL. A URI identifying a human-readable web
+          age with information about the error, used to provide the end-user with
+          additional information about the error.</t>
         </list></t>
 
-        <t>Common error codes:</t>
-        <t hangText="invalid_request"> The request is missing a required parameter or
-        is otherwise malformed.  The AM MUST respond with the HTTP 400 (Bad Request)
-        status code.</t>
+        <t>Common error codes:
+          <list style="hanging">
+            <t hangText="invalid_request"> The request is missing a required parameter or
+            is otherwise malformed. The AM MUST respond with the HTTP 400 (Bad Request)
+            status code.</t>
+          </list></t>
 
-        <t>For example:</t>
         <figure>
+          <preamble>For example:</preamble>
           <artwork><![CDATA[
-          HTTP/1.1 400 Bad Request
-          Content-Type: application/json
-          Cache-Control: no-store
-          {
-              {
-                  "error":"invalid_request",
-                  "error_description":"There is already a resource with this identifier.",
-                  "error_uri":"http://am.example.com/errors/resource_exists"
-              }
-          }]]></artwork>
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+Cache-Control: no-store
+{
+   "error":"invalid_request",
+   "error_description":"There is already a resource with this identifier.",
+   "error_uri":"http://am.example.com/errors/resource_exists"
+}]]>
+          </artwork>
         </figure>
       </section>
     </section>
@@ -2120,7 +2128,7 @@ Cache-Control: no-store
           set description play back the just-registered description? See how
           SCIM works for an example of this.</t>
 
-          <t>ISSUE #32: Need to add back detail on how the host tells the
+          <t>ISSUE #32: RESOLVED (provided examples) Need to add back detail on how the host tells the
           requester which AM to go to so that it can discover the token
           endpoint and authorization endpoint. Lukasz and Maciej will flesh
           this out with their own message examples.</t>
