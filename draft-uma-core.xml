@@ -296,9 +296,12 @@
 
             <t hangText="host registration endpoint">Part of the protection
             API at the AM used by the host. The endpoint at the AM at which
-            the host registers both resource sets which the AM needs to
-            protect and also permissions that a requester will be asking for.
-            (ISSUE #34: One endpoint or two for registration?)</t>
+            the host registers resource sets which the AM needs to
+            protect.</t>
+
+            <t hangText="scope registration endpoint">Part of the protection
+            API at the AM used by the host. The endpoint at the AM at which
+            the host registers permissions that a requester will be asking for.</t>
 
             <t hangText="token validation endpoint">Part of the protection API
             at the AM used by the host. The endpoint at the AM at which the
@@ -314,6 +317,11 @@
             authorization API at the AM used by the requester (and part of
             standard OAuth). The endpoint at the AM at which the requester
             asks for a requester access token.</t>
+
+            <t hangText="requester scoped access endpoint">Part of the
+            authorization API at the AM used by the requester. The endpoint
+            at the AM at which the requester asks for new permissions to be
+            associated with an existing access token for a host.</t>
 
             <t hangText="permission endpoint">Part of the authorization API at
             the AM used by the requester. The endpoint at the AM at which the
@@ -407,7 +415,7 @@
               <t
               hangText="http://kantarainitiative.org/confluence/display/uma/claim_formats"><vspace />OPTIONAL
               (zero or more). Claim format supported by this AM. Currently the
-              options are "openid-connect" and (ISSUE#17: any others? fill
+              options are "openid-connect", "claims2" and (ISSUE#17: any others? fill
               in).</t>
             </list></t>
 
@@ -430,17 +438,33 @@
               authorizing user's consent. (ISSUE #28.)</t>
 
               <t
-              hangText="http://kantarainitiative.org/confluence/display/uma/host_reg_uri"><vspace />REQUIRED.
-              The host registration endpoint. Supports the POST HTTP method,
-              accompanied by a host access token. Supplies the endpoint the
+              hangText="http://kantarainitiative.org/confluence/display/uma/host_reg_uri"><vspace />OPTIONAL.
+              The host registration endpoint. Supports the POST HTTP method. Allows
+              the host to dynamically registered with the Authorization Manager in order
+              to obtain the necessary OAuth credentials.
+              If present, the AM SHOULD require the
+              use of a transport-layer security mechanism such as TLS when the
+              host sends requests to the host registration endpoint.</t>
+
+              <t
+              hangText="http://kantarainitiative.org/confluence/display/uma/resource_reg_uri"><vspace />REQUIRED.
+              The resource registration endpoint. Requests to this endpoint require
+              a host access token to be present. Supplies the endpoint the
               host should use for registering information with the AM, such as
               descriptions of resource sets that are to be protected by this
-              AM (see <xref target="reg-api"></xref>) and permissions
-              requesters are seeking (see <xref
+              AM (see <xref target="reg-api"></xref>). The AM SHOULD require the
+              use of a transport-layer security mechanism such as TLS when the
+              host sends requests to the resource registration endpoint.</t>
+
+              <t
+              hangText="http://kantarainitiative.org/confluence/display/uma/scope_reg_uri"><vspace />REQUIRED.
+              The scope registration endpoint. Supports the POST HTTP method,
+              accompanied by a host access token. Supplies the endpoint the
+              host should use for registering information with the AM, such as
+              permissions requesters are seeking (see <xref
               target="h-am-register-scope"></xref>). The AM SHOULD require the
               use of a transport-layer security mechanism such as TLS when the
-              host sends requests to the host registration endpoint. (ISSUE
-              #34: One endpoint or two for registration?)</t>
+              host sends requests to the host registration endpoint.</t>
 
               <t
               hangText="http://kantarainitiative.org/confluence/display/uma/host_token_val_uri"><vspace />OPTIONAL.
@@ -464,10 +488,18 @@
 
               <t
               hangText="http://kantarainitiative.org/confluence/display/uma/req_authz_uri"><vspace />
-              REQUIRED. Supplies the authroization URL requesters should use
+              REQUIRED. Supplies the authorization URL requesters should use
               to ask for authorization to grant a scope. This endpoint SHOULD
               require the use of a transport-layer security mechanism such as
               TLS.</t>
+
+              <t
+              hangText="http://kantarainitiative.org/confluence/display/uma/req_scope_uri"><vspace />
+              REQUIRED. Supplies the scoped access URL requesters should use
+              to ask for permissions to be added to their existing tokens for a host. This endpoint SHOULD
+              require the use of a transport-layer security mechanism such as
+              TLS.</t>
+
             </list></t>
         </section>
 
@@ -494,9 +526,11 @@
 <Link
   rel="http://wguma.org/confluence/display/uma/host_user_uri"
   href="https://am.example.com/host/user_uri"></Link>
-<Link rel="http://kantarainitiative.org/confluence/display/uma/host_reg_uri"
+<Link
+  rel="http://kantarainitiative.org/confluence/display/uma/host_reg_uri"
   href="https://am.example.com/host/dynamic_reg_uri"></Link>
-<Link rel="http://kantarainitiative.org/confluence/display/uma/resource_reg_uri"
+<Link
+  rel="http://kantarainitiative.org/confluence/display/uma/resource_reg_uri"
   href="https://am.example.com/host/resource_details_uri"></Link>
 <Link
   rel="http://wguma.org/confluence/display/uma/host_token_val_uri"
@@ -505,11 +539,17 @@
   rel="http://wguma.org/confluence/display/uma/host_scope_reg_uri"
   href="https://am.example.com/host/scope_reg_uri"></Link>
 
-<!-- Requester token-getting endpoints --> 
-<Link rel="http://wguma.org/confluence/display/uma/req_token_uri"
+<!-- Requester specific endpoints -->
+<Link
+  rel="http://wguma.org/confluence/display/uma/req_token_uri"
   href="https://am.example.com/requester/token_uri"></Link> 
-<Link rel="http://wguma.org/confluence/display/uma/req_authz_uri"
+<Link
+  rel="http://wguma.org/confluence/display/uma/req_authz_uri"
   href="https://am.example.com/requester/authz_uri"></Link>
+<Link
+  rel="http://wguma.org/confluence/display/uma/req_scope_uri"
+  href="https://am.example.com/requester/scope_uri"></Link>
+
        ]]></artwork>
           </figure>
         </section>
@@ -902,6 +942,12 @@ Content-Type: application/json
               resource set description does not match the one provided in URI.The AM
               MUST respond with HTTP 400 (Bad Request) status code and MUST fail to act
               on the request.</t>
+              <t hangText="resource_set_not_found">Resource set requested from the AM
+              cannot be found. The AM MUST respond with HTTP 404 (Not Found) status code.</t>
+              <t hangText="resource_set_mismatch">Resource set that was requested to be deleted
+              or updated at the AM did not match the ETag value present in the request.
+              The AM MUST respond with HTTP 412 (Precondition Failed) status code and
+              MUST fail to act on the request.</t>
             </list></t>
 
           <figure>
@@ -1002,7 +1048,7 @@ ETag: "1234sdbdDX"
               <preamble>Example of an HTTP request that reads a resource set description from the AM:</preamble>
 
               <artwork><![CDATA[GET /host/photoz.example.com/resource/112210f47de98100 HTTP/1.1
-              Host: am.example.com
+Host: am.example.com
 ...]]></artwork>
             </figure>
 
@@ -1042,9 +1088,12 @@ ETag: "1234sdbdDX"
               <preamble>HTTP response (not found):</preamble>
 
               <artwork><![CDATA[HTTP/1.1 404 Not Found
+Content-Type: application/json
 ...
 
-(Body provides user-readable explanation of the error.)]]></artwork>
+{
+   "error":"resource_set_not_found"
+}]]></artwork>
             </figure>
           </section>
 
@@ -1110,7 +1159,12 @@ If-Match: "1234sdbdDX"
               <preamble>HTTP response (entity tag does not match):</preamble>
 
               <artwork><![CDATA[HTTP/1.1 412 Precondition failed
-...]]></artwork>
+Content-Type: application/json
+...
+
+{
+   "error":"resource_set_mismatch"
+}]]></artwork>
             </figure>
           </section>
 
@@ -1149,16 +1203,24 @@ If-Match: "1234sdbdDX"
               <preamble>HTTP response (not found):</preamble>
 
               <artwork><![CDATA[HTTP/1.1 404 Not Found
+Content-Type: application/json
 ...
 
-(Body provides user-readable explanation of the error.)]]></artwork>
+{
+   "error":"resource_set_not_found"
+}]]></artwork>
             </figure>
 
             <figure>
               <preamble>HTTP response (entity tag does not match):</preamble>
 
               <artwork><![CDATA[HTTP/1.1 412 Precondition failed
-...]]></artwork>
+Content-Type: application/json
+...
+
+{
+   "error":"resource_set_mismatch"
+}]]></artwork>
             </figure>
           </section>
 
@@ -1179,7 +1241,7 @@ If-Match: "1234sdbdDX"
               <preamble>Example of an HTTP request that lists registered resource set descriptions at the AM:</preamble>
 
               <artwork><![CDATA[GET /host/photoz.example.com/resource_set HTTP/1.1
-              Host: am.example.com
+Host: am.example.com
 ...]]></artwork>
             </figure>
 
@@ -1353,6 +1415,7 @@ Content-Type: application/json
 HTTP/1.1 403 Forbidden
 Content-Type: application/json
 Cache-Control: no-store
+
 {
    "error":"ambiguous-user"
 }
@@ -1378,8 +1441,8 @@ Cache-Control: no-store
 
             <artwork>
 HTTP/1.1 400 Bad Request
-WWW-Authenticate: Bearer realm="example"
-                     host_id="1B2M2Y8AsgTpgAmY7PhCfg",
+WWW-Authenticate: UMA realm="example"
+                     host_id="photoz.example.com",
                      am_uri="http://am.example.com"
             </artwork>
           </figure>
@@ -1400,8 +1463,8 @@ WWW-Authenticate: Bearer realm="example"
 
             <artwork>
 HTTP/1.1 401 Unauthorized
-WWW-Authenticate: Bearer realm="example"
-                     host_id="1B2M2Y8AsgTpgAmY7PhCfg",
+WWW-Authenticate: UMA realm="example"
+                     host_id="photoz.example.com",
                      am_uri="http://am.example.com"
             </artwork>
           </figure>
@@ -1428,8 +1491,8 @@ WWW-Authenticate: Bearer realm="example"
 
             <artwork>
 HTTP/1.1 403 Forbidden
-WWW-Authenticate: Bearer realm="example"
-                     host_id="1B2M2Y8AsgTpgAmY7PhCfg"
+WWW-Authenticate: UMA realm="example"
+                     host_id="photoz.example.com"
                      am_uri="http://am.example.com",
                      ticket="5454345rdsaa4543"
             </artwork>
@@ -1453,6 +1516,8 @@ WWW-Authenticate: Bearer realm="example"
             <artwork>
 HTTP/1.1 200 OK
 Content-Type: image/jpeg
+...
+
 /9j/4AAQSkZJRgABAgAAZABkAAD/7AARRHVja
 3kAAQAEAAAAPAAA/+4ADkFkb2JlAGTAAAAAAf
 /bAIQABgQEBAUEBgUFBgkGBQYJCwgGBggLDAo
@@ -1553,7 +1618,7 @@ Content-Type: application/json
           <t>The token status description is a JSON object with the name
           "token_status" containing an array of zero or more permission objects, each with
           the following parameters:<list style="hanging">
-              <t hangText="_id">REQUIRED. A string that uniquely identifies
+              <t hangText="resource_set_id">REQUIRED. A string that uniquely identifies
               the resource set, access to which has been granted to this
               requester on behalf of this requesting party. The identifier
               MUST correspond to a resource set that was previously registered
@@ -1585,7 +1650,7 @@ Cache-Control: no-store
         "token_status":
            [
               {
-                      "_id": "112210f47de98100",
+                      "resource_set_id": "112210f47de98100",
                       "scopes":
                       ["http://photoz.example.com/dev/actions/view",
                         "http://photoz.example.com/dev/actions/all"],
@@ -1672,7 +1737,8 @@ Host: am.example.com
         "requested_permission":
             {
             "resource_set_id":  "112210f47de98100",
-            "scopes": ["view", "all" ]
+            "scopes": ["http://photoz.example.com/dev/actions/view",
+                        "http://photoz.example.com/dev/actions/all"]
         }
 }
             ]]></artwork>
@@ -1722,6 +1788,7 @@ Location: https://am.example.com/host/scope_reg_uri/photoz.example.com/5454345rd
               the request was not registered previously by this host.</t>
               <t hangText="invalid_requester_token">Requester token was not
               recognized by the AM.</t>
+              <t hangText="expired_requester_token">Requester token has expired.</t>
             </list></t>
 
           <figure>
@@ -1731,6 +1798,8 @@ Location: https://am.example.com/host/scope_reg_uri/photoz.example.com/5454345rd
 HTTP/1.1 400 Bad Request
 Content-Type: application/json
 Cache-Control: no-store
+...
+
 {
    "error":"invalid_resource_set_id"
 }
@@ -1895,6 +1964,8 @@ Cache-Control: no-store
 HTTP/1.1 400 Bad Request
 Content-Type: application/json
 Cache-Control: no-store
+...
+
 {
    "error":"invalid_request",
    "error_description":"There is already a resource with this identifier.",
