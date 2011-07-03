@@ -8,7 +8,7 @@
 <!ENTITY RFC3552 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3552.xml">
 <!ENTITY RFC4627 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.4627.xml">
 ]>
-<rfc category="std" docName="draft-uma-core-v1-00-Rev13" ipr="trust200902">
+<rfc category="std" docName="draft-uma-core-v1-00-Rev14" ipr="trust200902">
   <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
 
   <?rfc toc='yes' ?>
@@ -87,13 +87,13 @@
       </address>
     </author>
 
-    <date day="1" month="July" year="2011" />
+    <date day="2" month="July" year="2011" />
 
     <abstract>
       <t>This specification defines the User-Managed Access (UMA) core
       protocol. This protocol provides a method for users to control access to
       their protected resources, residing on any number of host sites, through
-      an authorization manager that makes access decisions based on user
+      an authorization manager that governs access decisions based on user
       policy.</t>
 
       <t>This document is an approved Report of the User-Managed Access Work
@@ -365,16 +365,16 @@
 
           <t>If the host has not yet obtained a unique OAuth client identifier
           and optional secret from the AM, it registers with the AM as
-          required, for example via the OAuth dynamic registration protocol
-          (see <xref target="Dyn-Reg">Dyn-Reg</xref>) proposed by UMA
-          participants.</t>
+          required. It MAY do this using the OAuth dynamic registration
+          protocol (see <xref target="Dyn-Reg"></xref>) proposed by UMA WG
+          participants, if the AM supports it.</t>
 
           <t>The host obtains a host access token from the AM with the
           authorizing user's consent, using either the authorization code
           grant type or the SAML bearer assertion grant type.</t>
 
           <t>The host registers any resource sets with the AM that are
-          intended to be protected (see <xref target="reg-api"></xref>).</t>
+          intended to be protected.</t>
         </list></t>
 
       <section title="Host Looks Up AM Metadata">
@@ -419,7 +419,8 @@
               hangText="http://kantarainitiative.org/ns/uma/1.0/claim_formats"><vspace />OPTIONAL
               (zero or more). Claim format supported by this AM. Currently the
               options are "openid-connect" and "claims2" (ISSUE#17: any
-              others?).</t>
+              others?). If the AM is capable of requesting and accepting any
+              claim formats at all, it MUST declare them.</t>
             </list></t>
 
           <t>Link relationship rel values for the protection API endpoints for
@@ -451,7 +452,7 @@
               mechanism such as TLS.</t>
 
               <t
-              hangText="http://kantarainitiative.org/ns/uma/1.0/host_token_status_uri"><vspace />OPTIONAL.
+              hangText="http://kantarainitiative.org/ns/uma/1.0/host_token_status_uri"><vspace />REQUIRED.
               The token status endpoint. Requests to this endpoint require a
               host access token to be present. Supplies the endpoint the host
               uses to request the status of access tokens presented to them by
@@ -552,11 +553,11 @@
         optional secret from this AM, in this step it MUST do so in order to
         engage in OAuth-based interactions with the AM. It MAY do this using
         the OAuth dynamic registration protocol (see <xref
-        target="Dyn-Reg">Dyn-Reg</xref>) proposed by UMA WG participants, if
-        the AM supports it. The AM MUST issue a unique client identifier to
-        every host. This is to ensure that individual hosts can be
-        unambiguously identified in resource set registration, where the
-        client identifier is used as a URI component.</t>
+        target="Dyn-Reg"></xref>) proposed by UMA WG participants, if the AM
+        supports it. The AM MUST issue a unique client identifier to every
+        host. This is to ensure that individual hosts can be unambiguously
+        identified in resource set registration, where the client identifier
+        is used as a URI component.</t>
       </section>
 
       <section title="Host Obtains Host Access Token">
@@ -710,7 +711,7 @@
           value in the description.</t>
 
           <figure>
-            <artwork><![CDATA[PUT /host/photoz.example.com/resource/112210f47de98100 HTTP/1.1
+            <artwork><![CDATA[PUT /host/photoz.example.com/resource_set/112210f47de98100 HTTP/1.1
 Content-Type: application/json
 ...
 
@@ -1502,8 +1503,11 @@ WWW-Authenticate: UMA realm="example"
           to the requester with the HTTP 403 (Forbidden) status code
           indicating that the token has "insufficient_scope" (see Section
           2.4.1 of <xref target="OAuth-bearer"></xref>), along with providing
-          the AM's URI and the permission ticket it just received from the
-          AM.</t>
+          the AM's URI and the permission ticket it just received from the AM.
+          (ISSUE #41: MUST the host register a permission? If it doesn't want
+          to, or doesn't succeed in doing so, MUST it respond to the
+          requester, and if so, should the ticket (and even the am_uri) field
+          be optional?)</t>
 
           <figure>
             <preamble>For example:</preamble>
@@ -1525,7 +1529,9 @@ WWW-Authenticate: UMA realm="example"
           host examines the token status description. If the token status, in
           the host's judgment, is associated with at least one currently valid
           permission that applies to the scope of access attempted by the
-          requester, the host gives access to the desired resource.</t>
+          requester, the host gives access to the desired resource. (ISSUE
+          #40: MUST the host give access if the requester has suitable
+          permission?)</t>
 
           <figure>
             <preamble>For example:</preamble>
@@ -1585,19 +1591,19 @@ KCwoKDBAMDAwMDAwQDA4PEA8ODBMTFBQTExwb]]></artwork>
 
       <section anchor="h-am-token-validation"
                title="Host-AM: Ask for Requester's Presented Access Token Status">
-        <t>On receiving a requester access token in an access attempt, if the
-        host does not have an unexpired cached token status description
-        corresponding to the token, it asks the AM for the token's status.</t>
+        <t>On receiving a requester access token in an access attempt, the
+        host asks the AM for the token's status. If it has a cached token
+        status description available that has not expired yet, it MAY use it
+        instead.</t>
 
-        <t>The host's request to the AM is made with a POST to the AM's token
-        status endpoint containing the requester access token and the IP
-        address of the requester's request. The host MAY, at its discretion,
-        instead supply the originating IP address indicated in the requester's
-        X-Forwarded-For: header value. The POST uses the
-        "application/x-www-form-urlencoded" format as defined by
-        [W3C.REC-html401-19991224]. The IP address or originating IP address
-        is advisory only; the AM MAY ignore it for purposes of its own token
-        validation process.</t>
+        <t>The host makes the request to the AM with a POST to the AM's token
+        status endpoint. The body of the HTTP request message contains a JSON
+        <xref target="RFC4627"></xref> document providing the requester access
+        token and the IP address of the requester's request. The host MAY, at
+        its discretion, instead supply the originating IP address indicated in
+        the requester's X-Forwarded-For: header value. The IP address or
+        originating IP address is advisory only; the AM MAY ignore it for
+        purposes of its own token validation process.</t>
 
         <t>The host gains access to the token status endpoint by presenting
         its own host access token in the request. The host access token also
@@ -1777,6 +1783,11 @@ Host: am.example.com
             request.</t>
           </list></t>
 
+        <t>(ISSUE #41: MUST the host register a permission? If it doesn't want
+        to, or doesn't succeed in doing so, MUST it respond to the requester,
+        and if so, should the ticket (and even the am_uri) field be
+        optional?)</t>
+
         <section anchor="h-am-register-scope-success-response"
                  title="AM Returns a Permission Registration Success Response">
           <t>The AM responds with an HTTP 201 (Created) status code and
@@ -1853,10 +1864,12 @@ Cache-Control: no-store
 
         <t>The requester performs a GET on the permission endpoint, using the
         standard HTTP "Accept" header to express the acceptable media type(s)
-        of any claims-requested response. (ISSUE#14: Need to unify the request
-        for authorization with the providing of claims, so that this can be a
-        single request-response pattern that can loop as required. Should it
-        always be a POST therefore?)</t>
+        of any claims-requested response.</t>
+
+        <t>(ISSUE#14: Need to unify the request for authorization with the
+        providing of claims, so that this can be a single request-response
+        pattern that can loop as required. Should it always be a POST
+        therefore?)</t>
 
         <t>The AM responds in one of three ways: <list style="symbols">
             <t>If the AM requires no claims (or no further claims) from the
@@ -1881,27 +1894,20 @@ Cache-Control: no-store
         subset of claims to supply in order to obtain the needed
         permission.</t>
 
-        <t>The requester POSTs the authorization request, providing any claims
-        it has chosen to supply to satisfy the request for claims. If the AM
-        accepts the claims document submitted by the requester, the AM
-        responds with a successful or unsuccessful access token response, or
-        with another claims-required response. This loop can be run through as
-        many times as necessary for the AM to request further claims and the
-        requester to supply them, re-asking for authorization to get the
-        needed permission at every juncture.</t>
+        <t>If claims are requested and the requester wishes to provide them,
+        it POSTs another permission request, providing one or more claims or
+        references to one or more locations where the AM can go to retrieve
+        claims.</t>
 
-        <t>If the content-type is not recognized by the AM, the AM will reject
-        the document. (ISSUE#15: If the content-type (of the claims response
-        document) is not recognized by the AM, what happens then? Should be an
-        error from the AM.)</t>
+        <t>The AM responds with a successful or unsuccessful access token
+        response, or with another claims-requested response. This loop can be
+        run through as many times as necessary for the AM to request further
+        claims and the requester to supply them, re-asking for authorization
+        to get the needed permission at every juncture.</t>
 
-        <t>This specification does not define the formats of required-claims
-        lists and claims documents. It may ultimately put minimum conformance
-        requirements on requesters and AMs to handle particular claim formats
-        defined in other specifications, as well as specifying requirements
-        that claim formats seeking consideration for use in UMA must meet. One
-        candidate specification for lightweight claims requests and responses
-        is <xref target="Claims2.0">Claims2.0</xref>.</t>
+        <t>If the content-type of the request is not recognized by the AM, the
+        AM MUST reject the document. (ISSUE#15: Need the error to be specified
+        here.)</t>
 
         <figure>
           <preamble>For example:</preamble>
@@ -1909,37 +1915,46 @@ Cache-Control: no-store
           <artwork><![CDATA[TBS         ]]></artwork>
         </figure>
 
-        <section anchor="trusted-claims" title="Trusted Claims">
-          <t>(ISSUE#16: Need to incorporate OpenID Connect normative
-          references as appropriate.)</t>
+        <t>This specification does not define the formats of claims-requested
+        lists and appropriate responses. It may ultimately put minimum
+        conformance requirements on requesters and AMs to handle particular
+        claim formats defined in other specifications, as well as specifying
+        requirements that claim formats seeking consideration for use in UMA
+        must meet. Two candidate solutions, corresponding to claim formats the
+        AM can declare in its metadata (<xref target="am-endpoints"></xref>),
+        are:<list style="symbols">
+            <t><xref target="OpenID-Connect-Fmwk"></xref> (see <xref
+            target="trusted-claims"></xref> below for further context).</t>
 
-          <t>This specification will refer to OpenID Connect emerging protocol
-          as mechanism to support claims-based access control to enable
-          specific UMA use cases in which the access control decision to grant
-          access to Authorizing User's resource is made based on Requesting
-          Party information, such as Subject's name, age, email address, role,
-          location, etc.</t>
+            <t><xref target="Claims2.0"></xref> and <xref
+            target="SAAC"></xref>.</t>
+          </list></t>
+
+        <section anchor="trusted-claims"
+                 title="Trusted Claims with OpenID Connect">
+          <t>(ISSUE#16: Flesh out, possibly as profiles on top.)</t>
+
+          <t>It is hoped that UMA can profile the emerging OpenID Connect
+          protocol as a mechanism to support access control to enable specific
+          use cases in which the decision to grant access is made based on
+          trusted (often third-party-asserted) claims about the requesting
+          party, such as name, age, email address, role, and location.</t>
 
           <t>OpenID Connect provides authentication, authorization, and
-          attribute transmission capability. The integration approach uses
-          OpenID Connect protocol to request Requesting Party&rsquo;s claims,
-          leveraging OpenID Connect mechanisms to transmit attributes from
-          distributed sources.</t>
+          attribute transmission capability. The integration approach would
+          treat the claims-seeking UMA AM as an OpenID relying party and
+          OpenID Connect claims client, leveraging OpenID Connect mechanisms
+          to transmit claims from distributed sources.</t>
 
-          <t>The interoperability scenario is based on two AM's
-          interfaces:</t>
-
-          <t>- OpenID 2.0 Relying Party</t>
-
-          <t>- Claims Client for OpenID Connect OpenID 2.0</t>
-
-          <t>Relying Party interface is responsible to authenticate the
-          Requesting Party and initialize the OpenID Connect protocol. Claims
-          Client interface is responsible to request claims based on OpenID
-          Connect protocol, in order to satisfy claim-based policy. The Client
-          interacts with the OpenID Connect's Authorization Server to obtain
-          specific access token to access to the Requesting Party&rsquo;s
-          UserInfo EndPoint (trusted claims provider).</t>
+          <t>In this scenario, the relying party interface is responsible for
+          authenticating the subject (the UMA requesting party) and
+          initializing the OpenID Connect protocol. The claims client
+          interface is responsible for requesting claims based on OpenID
+          Connect protocol, in order to satisfy the UMA authorizing user's
+          policy. The client interacts with the OpenID Connect authorization
+          server to obtain a specific access token to access to the subject's
+          (UMA requesting party&rsquo;s) UserInfo endpoint (trusted claims
+          provider).</t>
         </section>
       </section>
     </section>
@@ -1987,7 +2002,7 @@ Cache-Control: no-store
             understanding and resolution of the error occurred.</t>
 
             <t hangText="error_uri">OPTIONAL. A URI identifying a
-            human-readable web age with information about the error, used to
+            human-readable web page with information about the error, used to
             provide the end-user with additional information about the
             error.</t>
           </list></t>
@@ -2095,30 +2110,11 @@ Cache-Control: no-store
     </section>
 
     <section title="Issues">
-      <t>Catalog of issues (some noted within the text above as well,
-      indicated by "ISSUE"):<list style="symbols">
-          <t>ISSUE#05: RESOLVED in Rev 13. When the token is invalid, what's
-          the current OAuth thinking on what we should return? Is there any
-          reason not to copy OAuth as closely as possible in this case? Or
-          should a token status of "invalid" be used, and returned as success
-          (unifying the different kinds of responses to the validation
-          request)?</t>
-
-          <t>ISSUE#06: RESOLVED in Rev 13. Need to complete the design of the
-          permission registration interaction and its associated error
-          messages.</t>
-
-          <t>ISSUE#07: RESOLVED in Rev 13. Need to complete the design of the
-          authorization request interaction and its associated error
-          messages.</t>
-
-          <t>ISSUE#12: DUPLICATE of ISSUE #05. RESOLVED in Rev 13. If the the
-          AM finds the requester's access token to be invalid, it returns an
-          UMA error message (correct? HTTP success?) to indicate that the
-          requester's token is invalid.</t>
-
-          <t>ISSUE#13: How to structure the body to include the scope and also
-          the requester's access token? Currently the latter is missing.</t>
+      <t>Catalog of issues (generally noted within the text above as well,
+      indicated by "ISSUE #nn"):<list style="symbols">
+          <t>ISSUE#13: RESOLVED in Rev 14. How to structure the body to
+          include the scope and also the requester's access token? Currently
+          the latter is missing.</t>
 
           <t>ISSUE#14: Need to unify the request for authorization with the
           providing of claims, so that this can be a single request-response
@@ -2126,13 +2122,12 @@ Cache-Control: no-store
 
           <t>ISSUE#15: If the content-type (of the claims response document)
           is not recognized by the AM, what happens then? Should be an error
-          from the AM.</t>
+          from the AM. We need to create an error for this.</t>
 
-          <t>ISSUE#16: Need to incorporate OpenID Connect and Claims 2.0
-          references to allow for trusted claims to unfold.</t>
+          <t>ISSUE#16: Need to profile for specific claims-requested lists and
+          claim responses.</t>
 
-          <t>ISSUE#17: Need to say what claims formats are supported.
-          "openid-connect" is now listed as the only option, temporarily.</t>
+          <t>ISSUE#17: Need to say what claims formats are supported.</t>
 
           <t>ISSUE#18: Provide commentary on any requirements layered on the
           forthcoming OAuth security considerations section; discuss UMA-layer
@@ -2141,31 +2136,7 @@ Cache-Control: no-store
           AM/host trust model; discuss short-lived token technique for
           lightweight requester correlation...</t>
 
-          <t>ISSUE#19: Other stuff goes here too. More privacy
-          considerations.</t>
-
-          <t>ISSUE#20: RESOLVED in Rev 13. From Lukasz email 6/6/2011: Rev8
-          Section 2.2: +1 for validation request in json format instead of
-          application/x-www-form-urlencoded.</t>
-
-          <t>ISSUE#21: RESOLVED in an older Rev. From Lukasz email 6/6/2011:
-          Rev8 Section 2.4: AM adds a scope to the requester's access token.
-          Maybe I am missing something but I don't see the explanation in the
-          spec how requester's token is issued at first. I think some parts
-          are mutual for the host and the requester i.e. AM Discovery,
-          optional Dynamic Client Registration.</t>
-
-          <t>ISSUE#22: RESOLVED in an older Rev. From Lukasz email 6/6/2011:
-          Rev8 Section 3.4.2: Example is missing required '_id' parameter.
-          ACTION#22: '_id' parameter added.</t>
-
-          <t>ISSUE#23: RESOLVED in Rev 13. From Lukasz email 6/6/2011: Rev8
-          Section 4: 403 Forbidden response when: 'unsupported method or host
-          ID not matching the presented host access token'. I think AM should
-          return 403 in case of performing operations on resources of
-          different user (not owned resources at this same host), instead of
-          returning 404 Not Found to not disclose presence of the resource set
-          at the AM.</t>
+          <t>ISSUE#19: More privacy considerations.</t>
 
           <t>ISSUE#24: From Lukasz email 6/6/2011: Rev8 Section 4.1: Empty
           response body? In SAM we return 'resource_id' and 'policy_uri' so
@@ -2178,45 +2149,17 @@ Cache-Control: no-store
           <t>ISSUE#27: Can Update Resource Set Description API mistakenly
           overwrite/destroy an existing resource description?</t>
 
-          <t>ISSUE #28: RESOLVED in Rev 13; consensus reached by WG on 30 Jun
-          2011. Okay to require the AM to support the authorization code grant
-          type, in addition to optionally supporting the SAML bearer assertion
-          grant type, to give a baseline of mandatory-to-implement
-          functionality? Lukasz and Eve agree so far.</t>
-
-          <t>ISSUE #29: DUPLICATE of ISSUE #24. Should we extend the resource
-          set (and/or scope) description parameters along the lines of the
-          SMART project?</t>
-
-          <t>ISSUE #30: RESOLVED in Rev 13; consensus reached by WG on 30 Jun
-          2011. We say the {hostid} has to be the client ID, but what if the
-          host is in the position of using anonymous credentials for some
-          reason? Is that even a possibility in the case of hosts (vs.
-          requesters)? Should we identify this more obviously as a constraint?
-          Lukasz and Eve think it should be identified as a constraint,
-          meaning that if dynamic registration is used, it has to support
-          truly unique client credential issuance.</t>
-
-          <t>ISSUE #31: RESOLVED in Rev 13; consensus reached by WG on 30 Jun
-          2011. Should the response to creating or updating a resource set
-          description play back the just-registered description? See how SCIM
-          works for an example of this.</t>
-
-          <t>ISSUE #32: Need to add back detail on how the host tells the
-          requester which AM to go to so that it can discover the token
-          endpoint and authorization endpoint. Lukasz and Maciej will flesh
-          this out with their own message examples. I think we still need to
-          explain explicitly how the requester has to construct the hostmeta
-          URI.</t>
+          <t>ISSUE #32: RESOLVED in Rev 13: Need to add back detail on how the
+          host tells the requester which AM to go to so that it can discover
+          the token endpoint and authorization endpoint. Lukasz and Maciej
+          will flesh this out with their own message examples. I think we
+          still need to explain explicitly how the requester has to construct
+          the hostmeta URI.</t>
 
           <t>ISSUE #33: Should it be possible to have an "implicit resource
           set" somehow that (in syntactic-sugar fashion) allows permissions to
           be passed around much as scopes already are passed around in plain
           OAuth?</t>
-
-          <t>ISSUE #34: RESOLVED in Rev 13. Should we have only one host
-          registration endoint, or do we need two: one for resource set
-          registration and one for permission registration?</t>
 
           <t>ISSUE #35: Consider allowing the host to provide a filter in the
           token validation request to indicate the particular resource
@@ -2226,16 +2169,33 @@ Cache-Control: no-store
 
           <t>ISSUE #36: Okay to use the made-up URI
           "http://kantarainitiative.org/ns/uma/1.0/..." for labeling the AM
-          endpoints and other identifying URIs?</t>
+          endpoints and other identifying URIs? Should these actually resolve
+          to anything?</t>
 
-          <t>ISSUE #37: Okay to cache token status as now explained in Rev 13?
-          Do we need to add examples if so?</t>
+          <t>ISSUE #37: Okay to cache token status as now explained? Do we
+          need to add examples if so?</t>
 
           <t>ISSUE #38: Does the returned permission ticket need an expiration
           field?</t>
 
           <t>ISSUE #39: Examine all MAYs/SHOULDs throughout the spec to see
-          what conformance instructions/levels may be necessary.</t>
+          what conformance instructions/levels may be necessary. E.g., in
+          Section 3.1.3, why is the host's 401 Unauthorized response to a
+          requester with an invalid token a SHOULD instead of a MUST? When
+          would it ever do something different? Similarly, Section 3.1.4, why
+          are the host's actions in the case of insufficient permission a
+          SHOULD instead of a MUST? Is it a case of the host deciding to just
+          not respond at all? In Section 3.2, why do we say the requester
+          SHOULD use the client credentials authorization grant type instead
+          of MUST?</t>
+
+          <t>ISSUE #40: MUST the host give access if the requester has
+          suitable permission?</t>
+
+          <t>ISSUE #41: MUST the host register a permission? If it doesn't
+          want to, or doesn't succeed in doing so, MUST it respond to the
+          requester, and if so, should the ticket (and even the am_uri) field
+          be optional?</t>
         </list></t>
     </section>
   </middle>
@@ -2312,19 +2272,6 @@ Cache-Control: no-store
         </front>
       </reference>
 
-      <reference anchor="Claims2.0"
-                 target="ISSUE #39: Examine all MAYs/SHOULDs throughout the spec to see what conformance instructions/levels may be necessary.">
-        <front>
-          <title>Claims 2.0</title>
-
-          <author initials="E." surname="Maler">
-            <organization>Kantara</organization>
-          </author>
-
-          <date year="2010" />
-        </front>
-      </reference>
-
       &RFC4627;
     </references>
 
@@ -2380,10 +2327,56 @@ Cache-Control: no-store
           <date year="2011" />
         </front>
       </reference>
+
+      <reference anchor="OpenID-Connect-Fmwk"
+                 target="http://openid.net/specs/openid-connect-framework-1_0.html">
+        <front>
+          <title>OpenID Connect Framework 1.0</title>
+
+          <author initials="N." surname="Sakimura">
+            <organization></organization>
+          </author>
+
+          <date day="30" month="June" year="2011" />
+        </front>
+      </reference>
+
+      <reference anchor="Claims2.0"
+                 target="http://kantarainitiative.org/confluence/display/uma/Claims+2.0">
+        <front>
+          <title>Claims 2.0</title>
+
+          <author initials="E." surname="Maler">
+            <organization>Kantara</organization>
+          </author>
+
+          <date year="2010" />
+        </front>
+      </reference>
+
+      <reference anchor="SAAC"
+                 target="http://kantarainitiative.org/confluence/display/uma/Simple+Access+Authorization+Claims">
+        <front>
+          <title>Simple Access Authorization Claims</title>
+
+          <author initials="E." surname="Maler">
+            <organization></organization>
+          </author>
+
+          <date day="29" month="April" year="2010" />
+        </front>
+      </reference>
     </references>
 
     <section anchor="History" title="Document History">
       <t>NOTE: To be removed by RFC editor before publication as an RFC</t>
+
+      <t>Changes in Rev 14:<list style="symbols">
+          <t>Some conformance cleanup.</t>
+
+          <t>Fleshed out wording and xrefs around claims-requested lists and
+          claim responses.</t>
+        </list></t>
 
       <t>Changes in Rev 13:<list style="symbols">
           <t>Filled in messaging examples and error responses.</t>
