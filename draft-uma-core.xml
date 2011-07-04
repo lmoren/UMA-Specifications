@@ -8,7 +8,8 @@
 <!ENTITY RFC3552 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3552.xml">
 <!ENTITY RFC4627 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.4627.xml">
 ]>
-<rfc category="std" docName="draft-uma-core-v1-00-Rev14" ipr="trust200902">
+<rfc category="std" docName="draft-hardjono-oauth-umacore-00"
+     ipr="trust200902">
   <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
 
   <?rfc toc='yes' ?>
@@ -76,12 +77,11 @@
       </address>
     </author>
 
-    <author fullname="&#321;ukasz More&#324;" initials="&#321;"
-            surname="More&#324;">
+    <author fullname="Lukasz" initials="L" surname="Moren">
       <organization>Newcastle University</organization>
 
       <address>
-        <email></email>
+        <email>lukasz.moren@ncl.ac.uk</email>
 
         <uri>http://ncl.ac.uk/</uri>
       </address>
@@ -408,8 +408,7 @@
             </list></t>
 
           <t>Property type values for access token and claim format
-          information: (ISSUE #36: Kantara URI okay?) <list hangIndent="6"
-              style="hanging">
+          information:<list hangIndent="6" style="hanging">
               <t
               hangText="http://kantarainitiative.org/ns/uma/1.0/token_formats"><vspace />REQUIRED
               (one or more). Access token format produced by this AM.
@@ -418,9 +417,9 @@
               <t
               hangText="http://kantarainitiative.org/ns/uma/1.0/claim_formats"><vspace />OPTIONAL
               (zero or more). Claim format supported by this AM. Currently the
-              options are "openid-connect" and "claims2" (ISSUE#17: any
-              others?). If the AM is capable of requesting and accepting any
-              claim formats at all, it MUST declare them.</t>
+              options are "openid-connect" and "claims2". If the AM is capable
+              of requesting and accepting any claim formats at all, it MUST
+              declare them.</t>
             </list></t>
 
           <t>Link relationship rel values for the protection API endpoints for
@@ -439,8 +438,8 @@
               endpoint the host uses to gather the consent of the authorizing
               user for a host-AM relationship if it is using the authorization
               code grant type. The AM MUST support the authorization code
-              grant type method of obtaining the authorizing user's consent.
-              (ISSUE #28.)</t>
+              grant type method of obtaining the authorizing user's
+              consent.</t>
 
               <t
               hangText="http://kantarainitiative.org/ns/uma/1.0/host_resource_reg_uri"><vspace />REQUIRED.
@@ -858,9 +857,7 @@ Content-Type: application/json
 
           <t>Resource set descriptions MAY contain extension parameters that
           are not defined in this specification. The names of extension
-          parameters MUST begin with "x-" or "X-". (ISSUE #29: Extend resource
-          set/scope descriptions with additional parameters being used by the
-          SMART team?)</t>
+          parameters MUST begin with "x-" or "X-".</t>
 
           <t>When a host creates or updates a resource set description (see
           <xref target="reg-api"></xref>), the AM MUST attempt to retrieve the
@@ -871,9 +868,6 @@ Content-Type: application/json
           user's login session at the AM, the AM MUST attempt to re-retrieve
           scope descriptions applying to that user whose cached versions have
           expired.</t>
-
-          <t>(ISSUE #33: Syntactic sugar for "implicit resource sets" or where
-          there's a single API endpoint?)</t>
         </section>
 
         <section anchor="reg-api" title="Resource Set Registration API">
@@ -1131,9 +1125,6 @@ Content-Type: application/json
             prior registration of the resource set in question has
             occurred.</t>
 
-            <t>(ISSUE#27: Can Update Resource Set Description API mistakenly
-            overwrite/destroy an existing resource description?)</t>
-
             <figure>
               <preamble>HTTP request:</preamble>
 
@@ -1390,10 +1381,10 @@ Content-Type: application/json
 
           <t>The host is (for now) required to check with the AM in real time
           about the status of all tokens unseen before or whose cached status
-          has expired. (ISSUE #37: Is this okay?) Eventually, this
-          specification will define an interoperable way to use of structured
-          tokens to allow AMs the opportunity to give out requester access
-          tokens whose status hosts can check "locally".</t>
+          has expired. Eventually, this specification will define an
+          interoperable way to use of structured tokens to allow AMs the
+          opportunity to give out requester access tokens whose status hosts
+          can check "locally".</t>
         </list></t>
 
       <t>The interactions are described in detail in the following
@@ -1503,11 +1494,8 @@ WWW-Authenticate: UMA realm="example"
           to the requester with the HTTP 403 (Forbidden) status code
           indicating that the token has "insufficient_scope" (see Section
           2.4.1 of <xref target="OAuth-bearer"></xref>), along with providing
-          the AM's URI and the permission ticket it just received from the AM.
-          (ISSUE #41: MUST the host register a permission? If it doesn't want
-          to, or doesn't succeed in doing so, MUST it respond to the
-          requester, and if so, should the ticket (and even the am_uri) field
-          be optional?)</t>
+          the AM's URI and the permission ticket it just received from the
+          AM.</t>
 
           <figure>
             <preamble>For example:</preamble>
@@ -1529,9 +1517,7 @@ WWW-Authenticate: UMA realm="example"
           host examines the token status description. If the token status, in
           the host's judgment, is associated with at least one currently valid
           permission that applies to the scope of access attempted by the
-          requester, the host gives access to the desired resource. (ISSUE
-          #40: MUST the host give access if the requester has suitable
-          permission?)</t>
+          requester, the host gives access to the desired resource.</t>
 
           <figure>
             <preamble>For example:</preamble>
@@ -1611,12 +1597,7 @@ KCwoKDBAMDAwMDAwQDA4PEA8ODBMTFBQTExwb]]></artwork>
         common, and therefore allows the AM to look up the correct authorizing
         user's policies and settings.</t>
 
-        <t>(ISSUE #35: Consider allowing the host to provide a filter in the
-        token validation request to indicate the particular resource
-        sets/scopes it would find acceptable, so that the AM can provide only
-        permissions that potentially match any of them. This approaches a
-        PDP/PEP model. Is this what the resource_set_id in the example below
-        is supposed to achieve?)</t>
+        <t></t>
 
         <figure>
           <preamble>Example of a request to the token validation endpoint that
@@ -1692,8 +1673,7 @@ Cache-Control: no-store
 }]]></artwork>
           </figure>
 
-          <t>(ISSUE #33: Syntactic sugar for "implicit resource sets" or where
-          there's a single API endpoint?)</t>
+          <t></t>
         </section>
 
         <section anchor="token-invalid"
@@ -1737,9 +1717,8 @@ Cache-Control: no-store
         permission registration endpoint, providing its host access token to
         get authorized access to this endpoint. The body of the HTTP request
         message contains a JSON <xref target="RFC4627"></xref> document
-        providing the requester's access token and the requested permission.
-        (ISSUE#13: How to structure the body to include the permission and
-        also the requester access token?)</t>
+        providing the requester's access token and the requested
+        permission.</t>
 
         <t>The requested scope is an object with the name
         "requested_permission" and the following parameters:<list
@@ -1777,16 +1756,13 @@ Host: am.example.com
         issues a response message that has one of the possible following
         outputs:<list style="symbols">
             <t>A permission ticket and its expiration time (typically very
-            short). (ISSUE #38: How to indicate the expiration time?)</t>
+            short).</t>
 
             <t>Error message indicating a malformed scope registration
             request.</t>
           </list></t>
 
-        <t>(ISSUE #41: MUST the host register a permission? If it doesn't want
-        to, or doesn't succeed in doing so, MUST it respond to the requester,
-        and if so, should the ticket (and even the am_uri) field be
-        optional?)</t>
+        <t></t>
 
         <section anchor="h-am-register-scope-success-response"
                  title="AM Returns a Permission Registration Success Response">
@@ -1866,11 +1842,6 @@ Cache-Control: no-store
         standard HTTP "Accept" header to express the acceptable media type(s)
         of any claims-requested response.</t>
 
-        <t>(ISSUE#14: Need to unify the request for authorization with the
-        providing of claims, so that this can be a single request-response
-        pattern that can loop as required. Should it always be a POST
-        therefore?)</t>
-
         <t>The AM responds in one of three ways: <list style="symbols">
             <t>If the AM requires no claims (or no further claims) from the
             requester in order to grant authorization for the asked-for
@@ -1906,13 +1877,12 @@ Cache-Control: no-store
         to get the needed permission at every juncture.</t>
 
         <t>If the content-type of the request is not recognized by the AM, the
-        AM MUST reject the document. (ISSUE#15: Need the error to be specified
-        here.)</t>
+        AM MUST reject the document.</t>
 
         <figure>
-          <preamble>For example:</preamble>
+          <preamble></preamble>
 
-          <artwork><![CDATA[TBS         ]]></artwork>
+          <artwork><![CDATA[         ]]></artwork>
         </figure>
 
         <t>This specification does not define the formats of claims-requested
@@ -1932,7 +1902,7 @@ Cache-Control: no-store
 
         <section anchor="trusted-claims"
                  title="Trusted Claims with OpenID Connect">
-          <t>(ISSUE#16: Flesh out, possibly as profiles on top.)</t>
+          <t></t>
 
           <t>It is hoped that UMA can profile the emerging OpenID Connect
           protocol as a mechanism to support access control to enable specific
@@ -2051,13 +2021,7 @@ Cache-Control: no-store
       of trust establishment between UMA entities and parties, which affects
       security considerations, see <xref target="UMA-trustmodel"></xref>.</t>
 
-      <t>(ISSUE#18: All drafts are required to have a security considerations
-      section. See RFC 3552. Add more here. Provide commentary on any
-      requirements layered on the forthcoming OAuth security considerations
-      section; discuss UMA-layer implications for more meaningful
-      authentication of requesters/requesting parties; discuss implications of
-      user-mediated AM/host trust model; discuss short-lived token technique
-      for lightweight requester correlation...)</t>
+      <t></t>
     </section>
 
     <section title="Privacy Considerations">
@@ -2073,9 +2037,6 @@ Cache-Control: no-store
       <t>For information about the technical, operational, and legal elements
       of trust establishment between UMA entities and parties, which affects
       privacy considerations, see <xref target="UMA-trustmodel"></xref>.</t>
-
-      <t>(ISSUE#19: Other stuff goes here too. More privacy
-      considerations.)</t>
     </section>
 
     <!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -->
@@ -2095,8 +2056,7 @@ Cache-Control: no-store
           features named in this specification for conformance.</t>
         </list></t>
 
-      <t>(ISSUE #39: Examine all MAYs/SHOULDs throughout the spec to see what
-      conformance instructions/levels may be necessary.)</t>
+      <t></t>
     </section>
 
     <section anchor="IANA" title="IANA Considerations">
@@ -2110,12 +2070,7 @@ Cache-Control: no-store
     </section>
 
     <section title="Issues">
-      <t>Catalog of issues (generally noted within the text above as well,
-      indicated by "ISSUE #nn"):<list style="symbols">
-          <t>ISSUE#13: RESOLVED in Rev 14. How to structure the body to
-          include the scope and also the requester's access token? Currently
-          the latter is missing.</t>
-
+      <t>Catalog of currently known issues.<list style="symbols">
           <t>ISSUE#14: Need to unify the request for authorization with the
           providing of claims, so that this can be a single request-response
           pattern that can loop as required.</t>
@@ -2370,90 +2325,6 @@ Cache-Control: no-store
 
     <section anchor="History" title="Document History">
       <t>NOTE: To be removed by RFC editor before publication as an RFC</t>
-
-      <t>Changes in Rev 14:<list style="symbols">
-          <t>Some conformance cleanup.</t>
-
-          <t>Fleshed out wording and xrefs around claims-requested lists and
-          claim responses.</t>
-        </list></t>
-
-      <t>Changes in Rev 13:<list style="symbols">
-          <t>Filled in messaging examples and error responses.</t>
-
-          <t>Split registration endpoint into two: resource set registration
-          and permission registration.</t>
-
-          <t>Changed "token validation" wording to "token status".</t>
-
-          <t>Completed changes based on consensus of WG in 30 Jun 2011
-          meeting.</t>
-
-          <t>Rationalized and fixed AM endpoint URIs and examples.</t>
-
-          <t>Added explanation of how token status can be cached.</t>
-        </list></t>
-
-      <t>Changes in Rev 12: See notes from 27 Jun 2011 ad hoc call: <eref
-      target="http://groups.google.com/group/kantara-initiative-uma-wg/browse_frm/thread/774ec41d3475c2fd"></eref>.</t>
-
-      <t>Changes in Rev 11:<list style="symbols">
-          <t>Removed the requester user authorization endpoint, as it is now
-          superfluous.</t>
-
-          <t>Changed the scope-related language to include "permissions".</t>
-
-          <t>Aligned all of the endpoint and API names.</t>
-
-          <t>Shortened the official XRD rel values for host_registration_uri
-          to host_reg_uri and host_token_validation_uri to host_token_val_uri.
-          (Okay?)</t>
-        </list></t>
-
-      <t>Changes in Rev 9:<list style="symbols">
-          <t>Added new top-level section on Requester obtaining an acces token
-          from the AM.</t>
-        </list></t>
-
-      <t>Changes in Rev 8:<list style="symbols">
-          <t>Added sections on Action Descriptions and Resource Set
-          Descriptions. Text obtained from the Resource Registration doc,
-          which is being discontinued.</t>
-        </list></t>
-
-      <t>Changes in Rev 7:<list style="symbols">
-          <t>Reintroduced three-phase language, but removed overt mention of
-          it in the sections after the introduction.</t>
-
-          <t>Added new requester authorization endpoint for use in Phase
-          2.</t>
-
-          <t>Moved the Phase 1 content after the Phases 2/3 content because
-          requesters don't need to read it.</t>
-
-          <t>Moved the important resource registration spec content to the
-          core spec.</t>
-
-          <t>Changed the old "action" language to "scope" language
-          throughout.</t>
-        </list></t>
-
-      <t>Changes in Rev 6: <list style="symbols">
-          <t>Now only using two phases.</t>
-
-          <t>Merged Phase III into Phase II, and removed duplication of
-          steps.</t>
-
-          <t>Revised the Introduction section.</t>
-
-          <t>Introduced examples section (TBD).</t>
-        </list></t>
-
-      <t>Changes in Rev 5: <list style="symbols">
-          <t>Placed Etherpad items into Section 3.</t>
-
-          <t>Used Phases (instead of stepa and substeps).</t>
-        </list></t>
     </section>
   </back>
 </rfc>
